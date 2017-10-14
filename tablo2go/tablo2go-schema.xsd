@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.example.org/tablo2go-schema"
+	xmlns:tns="http://www.example.org/tablo2go-schema" elementFormDefault="qualified">
+
+    <element name="option" type="string"></element>
+
+    <element name="options" type="string"></element>
+
+    <simpleType name="option">
+    	<restriction base="string"></restriction>
+    </simpleType>
+
+    <attribute name="name" type="string"></attribute>
+
+    <attribute name="value" type="string"></attribute>
+   
+    <group name="config">
+    	<sequence>
+    		<element name="options" type="string"></element>
+    	</sequence>
+    </group>
+</schema>

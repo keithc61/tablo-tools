@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+	<!-- default options -->
+	<!-- set quality for constant quality mode -->
+	<option name="crf" value="25" />
+
+	<!-- TODO -->
+	<option name="debug" value="false" />
+
+	<!-- TODO -->
+	<option name="ffmpeg" value="ffmpeg.exe" />
+
+	<!-- instead of saving, just list matching content -->
+	<option name="list" value="false" />
+
+	<!-- TODO -->
+	<option name="output" value="D:/video/%series%/s%season%e%episode% %name%.mp4" />
+
+	<!-- TODO -->
+	<option name="overwrite" value="false" />
+
+	<!--
+	a comma-separate list of host names or IP addresses;
+	if 'auto' or omitted, tablos will be located automatically
+	-->
+	<option name="tablos" value="auto" />
+
+	<!-- TODO -->
+	<option name="timestamp" value="false" />
+
+	<!-- set video bitrate (ignored if crf is specified) -->
+	<option name="videorate" value="2000" />
+
+	<!-- valid types (case-insensitive): Manual, Movie, Sports, TV, and Unknown -->
+	<recording type="TV" name="Fallon">
+		<option name="crf" value="20" />
+		<option name="timestamp" value="true" />
+
+		<!--
+		MediaType.forEach(type -> applyConfig(config, type.name(), value -> mediaTypes.put(type, Boolean.valueOf(value))));
+		MediaType.forEach(type -> applyConfig(config, type.name() + ".dir", value -> mediaHandler.put(type, type.handler(value))));
+		 -->
+	</recording>
+
+	<recording type="TV" name="Law &amp; Order True Crime: The Menendez Murders">
+		<option name="crf" value="20" />
+		<option name="episodes" value="1-" />
+		<option name="seasons" value="1-" />
+		<option name="timestamp" value="true" />
+		<option name="output" value="D:/video/Law &amp; Order True Crime - The Menendez Murders/s%season%e%episode% %name%.mp4" />
+	</recording>
+</project>

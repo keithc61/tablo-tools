@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="jar" basedir=".">
+
+	<property environment="env" />
+	<condition property="HOME" value="${env.USERPROFILE}" else="${env.HOME}">
+		<os family="windows" />
+	</condition>
+	<property name="tablo-jar" location="${HOME}/tools/tablo.jar" />
+
+	<target name="jar">
+		<jar destfile="${tablo-jar}" filesetmanifest="mergewithoutmain">
+			<manifest>
+				<attribute name="Class-Path" value="." />
+				<attribute name="Main-Class" value="tablo.Main" />
+			</manifest>
+			<zipfileset src="lib/json-simple-1.1.jar" />
+			<fileset dir="bin" />
+		</jar>
+	</target>
+
+	<target name="clean">
+		<delete file="${tablo-jar}" />
+	</target>
+
+</project>

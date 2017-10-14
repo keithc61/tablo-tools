@@ -1,0 +1,2 @@
+Useful URLs:
+	http://10.1.9.90:8885/server/info

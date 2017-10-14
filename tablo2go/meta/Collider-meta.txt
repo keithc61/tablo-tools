@@ -1,0 +1,55 @@
+{
+	"recEpisode": {
+		"jsonForClient": {
+			"airDate": "2015-12-11T03:00Z",
+			"description": "Six people awake in a futuristic world and try to reverse a wormhole that destroyed civilization.",
+			"episodeNumber": 0,
+			"originalAirDate": "2015-12-10",
+			"scheduleDuration": 1800.0,
+			"seasonNumber": 0,
+			"type": "recEpisode",
+			"qualifiers": [ "cc" ],
+			"relationships": {
+				"recSeason": 241155,
+				"recSeries": 241154,
+				"recChannel": 13885
+			},
+			"video": {
+				"state": "finished",
+				"size": 767954944,
+				"width": 1280,
+				"height": 720,
+				"duration": 2119.0,
+				"scheduleOffsetStart": -15.0,
+				"scheduleOffsetEnd": 304.0
+			},
+			"user": {
+				"type": "recordingUserInfo",
+				"watched": false,
+				"protected": false,
+				"position": 0.0
+			},
+			"objectID": 241153
+		},
+		"imageJson": { "images": [ { "type": "image", "imageID": 248464, "imageType": "snapshot", "imageStyle": "snapshot" } ] }
+	},
+	"recSeries": {
+		"jsonForClient": {
+			"description": "Six people awake in a futuristic world and try to reverse a wormhole that destroyed civilization.",
+			"duration": 1800.0,
+			"originalAirDate": "2015-12-10",
+			"title": "Collider",
+			"relationships": { "genres": [ 2506,50,806 ] },
+			"objectID": 241154,
+			"type": "recSeries"
+		}
+	},
+	"recSeason": {
+		"jsonForClient": {
+			"seasonNumber": 0,
+			"relationships": { "recSeries": 241154 },
+			"objectID": 241155,
+			"type": "recSeason"
+		}
+	}
+}

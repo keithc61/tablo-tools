@@ -1,0 +1,90 @@
+{
+"recMovieAiring": {
+"jsonForClient": {
+"type": "recMovieAiring",
+"objectID": 300165,
+"airDate": "2016-03-20T21:00Z",
+"scheduleDuration": 7200.0,
+"relationships": {
+"recMovie": 300166,
+"recChannel": 15489
+},
+"video": {
+"state": "recording",
+"size": 1024,
+"width": 1280,
+"height": 720,
+"duration": 0.0,
+"scheduleOffsetStart": -15.0,
+"scheduleOffsetEnd": 0.0
+},
+"user": {
+"type": "recordingUserInfo",
+"watched": false,
+"protected": false,
+"position": 0.0
+},
+"qualifiers": [ "cc" ]
+}
+},
+"recMovie": {
+"jsonForClient": {
+"mpaaRating": "g",
+"plot": "WALL-E, short for Waste Allocation Load Lifter Earth-class, is the last robot left on Earth. He spends his days tidying up the planet, one piece of garbage at a time. But during 700 years, WALL-E has developed a personality, and he's more than a little lonely. Then he spots EVE (Elissa Knight), a sleek and shapely probe sent back to Earth on a scanning mission. Smitten WALL-E embarks on his greatest adventure yet when he follows EVE across the galaxy.",
+"releaseYear": 2008,
+"runtime": 5820.0,
+"title": "WALL-E",
+"cast": [
+"Ben Burtt","Elissa Knight","Jeff Garlin","Fred Willard","John Ratzenberger","Kathy Najimy","Sigourney Weaver","Bob Bergen"],
+"awards": [
+{
+"won": true,
+"name": "Academy Award",
+"category": "Best Animated Feature Film",
+"year": 2008
+},
+{
+"won": true,
+"name": "Golden Globe",
+"category": "Best Animated Feature Film",
+"year": 2008
+},
+{
+"won": true,
+"name": "British Academy of Film & Television Arts",
+"category": "Animated Film",
+"year": 2008
+}],
+"directors": [
+"Andrew Stanton"],
+"qualityRating": 1.0,
+"relationships": {
+"genres": [52,2506,84,814,744]
+},
+"type": "recMovie",
+"objectID": 300166
+},
+"imageJson": {
+"images": [
+{
+"type": "image",
+"imageID": 299195,
+"imageType": "movie_2x3_small",
+"imageStyle": "thumbnail"
+},
+{
+"type": "image",
+"imageID": 299196,
+"imageType": "iconic_4x3_large",
+"imageStyle": "cover"
+},
+{
+"type": "image",
+"imageID": 299197,
+"imageType": "iconic_4x3_large",
+"imageStyle": "background"
+}
+]
+}
+}
+}

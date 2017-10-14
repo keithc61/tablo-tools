@@ -1,0 +1,19 @@
+C:\Program Files\MCEBuddy2x\ffmpeg\ffmpeg.exe
+	-y
+	-i http://192.168.0.125:18080/pvr/20188/pl/playlist.m3u8
+	-codec copy
+	-strict -2
+	-c:a aac
+	-threads 0
+	-metadata title=""
+	-metadata description="Jason's quest to look into his past hits a roadblock; Morgan makes a risky move; Anna reveals a huge confession."
+	-metadata synopsis="Jason's quest to look into his past hits a roadblock; Morgan makes a risky move; Anna reveals a huge confession."
+	-metadata date="2015-11-23T21:00Z"
+	"C:\Users\Larry\Tablo\tmp\General Hospital - .mp4"
+
+%ifseason%
+<
+	TV Shows/%showname%/Season %season%/%originalfilename%
+								 Movies/%originalfilename%
+>
+
