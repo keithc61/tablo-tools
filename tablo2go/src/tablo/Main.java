@@ -440,17 +440,30 @@ public final class Main {
 			}
 
 			if (fetch) {
-				URL playlist = new URL(video, "pl/playlist.m3u8");
-				Process process = startFilter(playlist, dest);
-
-				//	try (OutputStream out = process.getOutputStream()) {
-				//		Util.copyPlaylist(playlist, out);
-				//	}
+				// ffmpeg doesn't like non-ASCII filenames
+				File temp = File.createTempFile("tmp-", ".mp4", folder);
 
 				try {
-					process.waitFor();
-				} catch (InterruptedException e) {
-					// ignore
+					URL playlist = new URL(video, "pl/playlist.m3u8");
+					Process process = startFilter(playlist, temp);
+
+					//	try (OutputStream out = process.getOutputStream()) {
+					//		Util.copyPlaylist(playlist, out);
+					//	}
+
+					try {
+						process.waitFor();
+					} catch (InterruptedException e) {
+						// ignore
+					}
+
+					if (!(dest.delete() && temp.renameTo(dest))) {
+						System.err.format("Failed to rename %s to '%s'%n", temp.getName(), dest.getName());
+					}
+				} finally {
+					// remove temporary files on failure
+					// (this does nothing if the file was successfully renamed)
+					temp.delete();
 				}
 			}
 

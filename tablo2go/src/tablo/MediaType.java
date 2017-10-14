@@ -4,7 +4,6 @@ import static tablo.Util.selectUnique;
 
 import java.io.File;
 import java.io.PrintStream;
-import java.nio.charset.Charset;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -381,13 +380,11 @@ public enum MediaType {
 
 	private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
-	private static final Charset UTF_8 = Charset.forName("UTF-8");
-
 	final static String fixFilename(String name) {
 		StringBuilder buffer = new StringBuilder();
 
-		for (byte nameByte : name.getBytes(UTF_8)) {
-			switch (nameByte) {
+		for (char ch : name.toCharArray()) {
+			switch (ch) {
 			case '\0':
 			case '<':
 			case '>':
@@ -400,12 +397,12 @@ public enum MediaType {
 			case '*':
 			case '%': // a legal character, but used as an escape here
 				buffer.append('%');
-				buffer.append(HEX[(nameByte >> 4) & 0xF]);
-				buffer.append(HEX[(nameByte >> 0) & 0xF]);
+				buffer.append(HEX[(ch >> 4) & 0xF]);
+				buffer.append(HEX[(ch >> 0) & 0xF]);
 				break;
 
 			default:
-				buffer.append((char) nameByte);
+				buffer.append(ch);
 				break;
 			}
 		}
