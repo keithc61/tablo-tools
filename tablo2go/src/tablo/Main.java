@@ -258,8 +258,6 @@ public final class Main {
 
 	private final Map<MediaType, MediaHandler> mediaHandler;
 
-	private final Map<MediaType, Boolean> mediaTypes;
-
 	private boolean overwrite;
 
 	private final Selector selector;
@@ -277,7 +275,6 @@ public final class Main {
 		this.ffmpeg = "ffmpeg";
 		this.listOnly = false;
 		this.mediaHandler = new HashMap<>();
-		this.mediaTypes = new HashMap<>();
 		this.overwrite = false;
 		this.selector = new Selector();
 		this.tablos = new ArrayList<>();
@@ -303,24 +300,16 @@ public final class Main {
 		options.value("videorate", this::setVideoRate);
 
 		MediaType.forEach( // <br/>
-				type -> options.flag(type.name(), // <br/>
-						() -> mediaTypes.put(type, Boolean.TRUE)));
-		MediaType.forEach( // <br/>
-				type -> options.value(type.name() + ".dir", // <br/>
+				type -> options.value(type.name(), // <br/>
 						input -> mediaHandler.put(type, type.handler(input))));
 
-		options.regex("[^-].*", input -> selector.addTitle(input.trim()));
+		options.regex("[^-].+", input -> selector.addTitle(input.trim()));
 
 		Arrays.stream(args).forEach(options::handle);
 
 		// if no tablos were specifically identified, use all local devices
 		if (tablos.isEmpty()) {
 			tablos.addAll(getLocalTabloIps());
-		}
-
-		// if no media type is specifically included, then include all that have not been excluded
-		if (!mediaTypes.values().stream().anyMatch(Boolean::booleanValue)) {
-			MediaType.forEach(type -> mediaTypes.put(type, Boolean.TRUE));
 		}
 	}
 
@@ -346,9 +335,6 @@ public final class Main {
 					.filter(ip -> !ip.isEmpty()) // <br/>
 					.forEach(tablos::add);
 		});
-
-		MediaType.forEach(
-				type -> applyConfig(config, type.name(), value -> mediaTypes.put(type, Boolean.valueOf(value))));
 
 		MediaType.forEach(type -> applyConfig(config, type.name() + ".dir",
 				value -> mediaHandler.put(type, type.handler(value))));
@@ -387,11 +373,6 @@ public final class Main {
 				}
 
 				MediaType type = MediaType.fromMeta(meta);
-
-				if (!Boolean.TRUE.equals(mediaTypes.get(type))) {
-					continue;
-				}
-
 				MediaHandler handler = mediaHandler.get(type);
 
 				if (handler == null || !handler.isSelected(selector, meta)) {
@@ -441,7 +422,7 @@ public final class Main {
 
 			if (fetch) {
 				// ffmpeg doesn't like non-ASCII filenames
-				File temp = File.createTempFile("tmp-", ".mp4", folder);
+				File temp = File.createTempFile("tablo-", "-tmp.mp4", folder);
 
 				try {
 					URL playlist = new URL(video, "pl/playlist.m3u8");

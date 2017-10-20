@@ -1,5 +1,6 @@
 package tablo;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -21,6 +22,7 @@ import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +33,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import tablo.io.MediaInputStream;
 
@@ -149,17 +152,23 @@ public final class Util {
 
 	public static Object readJSON(Reader reader) throws IOException {
 		try {
-			return new JSONParser().parse(reader);
-		} catch (org.json.simple.parser.ParseException e) {
+			BufferedReader buffered = new BufferedReader(reader);
+
+			buffered.mark(1);
+
+			if (buffered.read() == -1) {
+				return Collections.EMPTY_MAP;
+			}
+
+			buffered.reset();
+
+			return new JSONParser().parse(buffered);
+		} catch (ParseException e) {
 			throw new IOException(e);
 		}
 	}
 
 	public static Object readJSON(URL url) throws IOException {
-
-		//0000400: 4479 6c61 6e2c 2061 6e64 204a 2e4a 2e20  Dylan, and J.J.
-		//0000410: e280 9420 7768 6f20 6861 7320 6120 636f  ... who has a co
-
 		try (Reader reader = openReader(url)) {
 			return readJSON(reader);
 		}
