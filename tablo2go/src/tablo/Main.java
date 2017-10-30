@@ -254,6 +254,8 @@ public final class Main {
 
 	private String ffmpeg;
 
+	private boolean includeUnfinished;
+
 	private boolean listOnly;
 
 	private final Map<MediaType, MediaHandler> mediaHandler;
@@ -273,6 +275,7 @@ public final class Main {
 		this.crf = null;
 		this.debug = false;
 		this.ffmpeg = "ffmpeg";
+		this.includeUnfinished = false;
 		this.listOnly = false;
 		this.mediaHandler = new HashMap<>();
 		this.overwrite = false;
@@ -298,6 +301,7 @@ public final class Main {
 		options.value("tablo", tablos::add);
 		options.flag("timestamp", this::setTimestamp);
 		options.value("videorate", this::setVideoRate);
+		options.value("unfinished", this::setUnfinished);
 
 		MediaType.forEach( // <br/>
 				type -> options.value(type.name(), // <br/>
@@ -328,6 +332,7 @@ public final class Main {
 		applyConfig(config, "overwrite", this::setOverwrite);
 		applyConfig(config, "timestamp", this::setTimestamp);
 		applyConfig(config, "videoRate", this::setVideoRate);
+		applyConfig(config, "unfinished", this::setUnfinished);
 
 		applyConfig(config, "tablo", value -> {
 			Arrays.stream(value.split("\\s*,\\s*")) // <br/>
@@ -336,7 +341,7 @@ public final class Main {
 					.forEach(tablos::add);
 		});
 
-		MediaType.forEach(type -> applyConfig(config, type.name() + ".dir",
+		MediaType.forEach(type -> applyConfig(config, type.name(), // <br/>
 				value -> mediaHandler.put(type, type.handler(value))));
 	}
 
@@ -382,7 +387,7 @@ public final class Main {
 				if (listOnly) {
 					System.out.printf("Video: %s\n", videoId);
 					handler.printMeta(System.out, meta);
-				} else if (handler.isFinished(meta)) {
+				} else if (includeUnfinished || handler.isFinished(meta)) {
 					actions.add(() -> save(video, handler, meta));
 				}
 			}
@@ -505,6 +510,10 @@ public final class Main {
 
 	private void setTimestamp(String value) {
 		timestamp = Boolean.parseBoolean(value);
+	}
+
+	private void setUnfinished(String value) {
+		includeUnfinished = Boolean.parseBoolean(value);
 	}
 
 	private void setVideoRate(String value) {

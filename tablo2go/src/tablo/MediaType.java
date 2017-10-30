@@ -113,6 +113,7 @@ public enum MediaType {
 			out.println("  title: " + getTitle(meta));
 			out.println("  aired: " + Util.formatAirTime(getAirDate(meta)));
 			out.println("  size:  " + getSize(meta));
+			super.printMeta(out, meta);
 		}
 
 	}
@@ -203,6 +204,7 @@ public enum MediaType {
 			}
 
 			out.println("  size:     " + getSize(meta));
+			super.printMeta(out, meta);
 		}
 
 	}
@@ -270,6 +272,7 @@ public enum MediaType {
 			out.println("  title: " + getTitle(meta));
 			out.println("  aired: " + Util.formatAirTime(getAirDate(meta)));
 			out.println("  size:  " + getSize(meta));
+			super.printMeta(out, meta);
 		}
 
 	}
@@ -372,6 +375,7 @@ public enum MediaType {
 			out.println("  title:   " + getTitle(meta));
 			out.println("  aired:   " + Util.formatAirTime(getAirDate(meta)));
 			out.println("  size:    " + getSize(meta));
+			super.printMeta(out, meta);
 		}
 
 	}

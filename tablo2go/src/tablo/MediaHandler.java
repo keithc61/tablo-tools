@@ -55,6 +55,10 @@ public abstract class MediaHandler {
 
 	public abstract boolean isSelected(MediaSelector selector, Map<?, ?> meta);
 
-	public abstract void printMeta(PrintStream out, Map<?, ?> meta);
+	public void printMeta(PrintStream out, Map<?, ?> meta) {
+		if (false == isFinished(meta)) {
+			out.println("  unfinished");
+		}
+	}
 
 }
