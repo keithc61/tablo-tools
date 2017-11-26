@@ -9,6 +9,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -119,6 +120,25 @@ public enum MediaType {
 	}
 
 	private static final class MovieHandler extends MediaHandler {
+
+		@Override
+		public Map<String, String> getPersistentMetadata(Map<?, ?> meta) {
+			Map<String, String> persistent = new HashMap<>();
+
+			int year = getYear(meta);
+
+			if (year != 0) {
+				persistent.put("date", Integer.toString(year));
+			}
+
+			String title = getTitle(meta);
+
+			if (title != null) {
+				persistent.put("title", title);
+			}
+
+			return persistent;
+		}
 
 		private static String getSize(Map<?, ?> meta) {
 			return trim(selectUnique(meta, "recMovieAiring.jsonForClient.video.size"));
@@ -334,8 +354,7 @@ public enum MediaType {
 				}
 				fileName.append(title).append(".mp4");
 
-				return Paths.get(directory, fixFilename(series), fixFilename(fileName.toString()))
-						.toFile();
+				return Paths.get(directory, fixFilename(series), fixFilename(fileName.toString())).toFile();
 			}
 
 			return null;

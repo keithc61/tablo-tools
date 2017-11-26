@@ -431,7 +431,7 @@ public final class Main {
 
 				try {
 					URL playlist = new URL(video, "pl/playlist.m3u8");
-					Process process = startFilter(playlist, temp);
+					Process process = startFilter(playlist, temp, handler.getPersistentMetadata(meta));
 
 					//	try (OutputStream out = process.getOutputStream()) {
 					//		Util.copyPlaylist(playlist, out);
@@ -520,7 +520,7 @@ public final class Main {
 		videoRate = value;
 	}
 
-	private Process startFilter(URL input, File output) throws IOException {
+	private Process startFilter(URL input, File output, Map<String, String> metadata) throws IOException {
 		List<String> command = new ArrayList<>(20);
 
 		command.add("nice");
@@ -560,6 +560,11 @@ public final class Main {
 			command.add("-c");
 			command.add("copy");
 		}
+
+		metadata.forEach((key, value) -> {
+			command.add("-metadata");
+			command.add(key + "=" + value);
+		});
 
 		command.add(output.getAbsolutePath());
 
