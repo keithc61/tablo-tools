@@ -427,15 +427,11 @@ public final class Main {
 
 			if (fetch) {
 				// ffmpeg doesn't like non-ASCII filenames
-				File temp = File.createTempFile("tablo-", "-tmp.mp4", folder);
+				File temp = File.createTempFile("tablo-", ".tmp", folder);
 
 				try {
 					URL playlist = new URL(video, "pl/playlist.m3u8");
 					Process process = startFilter(playlist, temp, handler.getPersistentMetadata(meta));
-
-					//	try (OutputStream out = process.getOutputStream()) {
-					//		Util.copyPlaylist(playlist, out);
-					//	}
 
 					try {
 						process.waitFor();
@@ -536,8 +532,6 @@ public final class Main {
 
 		command.add("-nostats");
 
-		// command.add("-threads"); command.add("1");
-
 		command.add("-i");
 		command.add(input.toExternalForm());
 
@@ -565,6 +559,9 @@ public final class Main {
 			command.add("-metadata");
 			command.add(key + "=" + value);
 		});
+
+		command.add("-f");
+		command.add("mp4");
 
 		command.add(output.getAbsolutePath());
 
