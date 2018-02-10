@@ -1,5 +1,7 @@
 package tablo;
 
+import static tablo.Util.selectUnique;
+
 import java.io.File;
 import java.io.PrintStream;
 import java.util.Calendar;
@@ -8,34 +10,9 @@ import java.util.Map;
 
 public abstract class MediaHandler {
 
-	public static final MediaHandler IGNORE = new MediaHandler(null) {
-
-		@Override
-		public String getState(Map<?, ?> meta) {
-			return "";
-		}
-
-		@Override
-		public File getTargetFile(Map<?, ?> meta) {
-			return null;
-		}
-
-		@Override
-		public Calendar getTime(Map<?, ?> meta) {
-			return null;
-		}
-
-		@Override
-		public boolean isSelected(MediaSelector selector, Map<?, ?> meta) {
-			return false;
-		}
-
-		@Override
-		public void printMeta(PrintStream out, Map<?, ?> meta) {
-			return;
-		}
-
-	};
+	protected static final String trim(String string) {
+		return string != null ? string.trim() : "";
+	}
 
 	protected final String directory;
 
@@ -52,7 +29,10 @@ public abstract class MediaHandler {
 		return Collections.emptyMap();
 	}
 
-	public abstract String getState(Map<?, ?> meta);
+	@SuppressWarnings("static-method")
+	public final String getState(Map<?, ?> meta) {
+		return trim(selectUnique(meta, "video_details.state"));
+	}
 
 	public abstract File getTargetFile(Map<?, ?> meta);
 

@@ -46,7 +46,6 @@ public enum MediaType {
 	Unknown {
 		@Override
 		public MediaHandler handler(String directory) {
-			// TODO
 			return null;
 		}
 	};
@@ -54,24 +53,19 @@ public enum MediaType {
 	private static final class ManualHandler extends MediaHandler {
 
 		private static String getAirDate(Map<?, ?> meta) {
-			return selectUnique(meta, "recManualProgramAiring.jsonForClient.airDate");
+			return selectUnique(meta, "airing_details.datetime");
 		}
 
 		private static String getSize(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recManualProgramAiring.jsonForClient.video.size"));
+			return trim(selectUnique(meta, "video_details.size"));
 		}
 
 		private static String getTitle(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recManualProgram.jsonForClient.title"));
+			return trim(selectUnique(meta, "airing_details.show_title"));
 		}
 
 		ManualHandler(String directory) {
 			super(directory);
-		}
-
-		@Override
-		public String getState(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recManualProgramAiring.jsonForClient.video.state"));
 		}
 
 		@Override
@@ -141,15 +135,17 @@ public enum MediaType {
 		}
 
 		private static String getSize(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recMovieAiring.jsonForClient.video.size"));
+			return trim(selectUnique(meta, "video_details.size"));
 		}
 
 		private static String getTitle(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recMovie.jsonForClient.title"));
+			return trim(selectUnique(meta, "airing_details.show_title"));
 		}
 
 		private static int getYear(Map<?, ?> meta) {
-			String year = selectUnique(meta, "recMovie.jsonForClient.releaseYear");
+			// FIXME found in related movie metadata
+			// e.g. recordings/movies/291615
+			String year = selectUnique(meta, "movie.release_year");
 
 			try {
 				return Integer.parseInt(year);
@@ -160,11 +156,6 @@ public enum MediaType {
 
 		MovieHandler(String directory) {
 			super(directory);
-		}
-
-		@Override
-		public String getState(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recMovieAiring.jsonForClient.video.state"));
 		}
 
 		@Override
@@ -232,24 +223,19 @@ public enum MediaType {
 	private static final class SportsHandler extends MediaHandler {
 
 		private static String getAirDate(Map<?, ?> meta) {
-			return selectUnique(meta, "recSportEvent.jsonForClient.airDate");
+			return selectUnique(meta, "airing_details.datetime");
 		}
 
 		private static String getSize(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recSportEvent.jsonForClient.video.size"));
+			return trim(selectUnique(meta, "video_details.size"));
 		}
 
 		private static String getTitle(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recSportEvent.jsonForClient.eventTitle"));
+			return trim(selectUnique(meta, "airing_details.show_title"));
 		}
 
 		SportsHandler(String directory) {
 			super(directory);
-		}
-
-		@Override
-		public String getState(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recSportEvent.jsonForClient.video.state"));
 		}
 
 		@Override
@@ -302,40 +288,35 @@ public enum MediaType {
 		private static final DateFormat AirDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
 		private static String getAirDate(Map<?, ?> meta) {
-			return selectUnique(meta, "recEpisode.jsonForClient.airDate");
+			return selectUnique(meta, "airing_details.datetime");
 		}
 
 		private static String getEpisode(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recEpisode.jsonForClient.episodeNumber"));
+			return trim(selectUnique(meta, "episode.number"));
 		}
 
 		private static String getOriginalAirDate(Map<?, ?> meta) {
-			return selectUnique(meta, "recEpisode.jsonForClient.originalAirDate");
+			return selectUnique(meta, "episode.orig_air_date");
 		}
 
 		private static String getSeason(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recEpisode.jsonForClient.seasonNumber"));
+			return trim(selectUnique(meta, "episode.season_number"));
 		}
 
 		private static String getSeries(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recSeries.jsonForClient.title"));
+			return trim(selectUnique(meta, "airing_details.show_title"));
 		}
 
 		private static String getSize(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recEpisode.jsonForClient.video.size"));
+			return trim(selectUnique(meta, "video_details.size"));
 		}
 
 		private static String getTitle(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recEpisode.jsonForClient.title"));
+			return trim(selectUnique(meta, "episode.title"));
 		}
 
 		TVHandler(String directory) {
 			super(directory);
-		}
-
-		@Override
-		public String getState(Map<?, ?> meta) {
-			return trim(selectUnique(meta, "recEpisode.jsonForClient.video.state"));
 		}
 
 		@Override
@@ -380,9 +361,9 @@ public enum MediaType {
 
 		@Override
 		public boolean isSelected(MediaSelector selector, Map<?, ?> meta) {
-			return selector.isSelectedTitle(getSeries(meta))
-				&& selector.isSelectedSeason(getSeason(meta))
-				&& selector.isSelectedEpisode(getEpisode(meta));
+			return selector.isSelectedTitle(getSeries(meta)) //
+					&& selector.isSelectedSeason(getSeason(meta)) //
+					&& selector.isSelectedEpisode(getEpisode(meta));
 		}
 
 		@Override
@@ -403,7 +384,7 @@ public enum MediaType {
 
 	private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
-	final static String fixFilename(String name) {
+	static final String fixFilename(String name) {
 		StringBuilder buffer = new StringBuilder();
 
 		for (char ch : name.toCharArray()) {
@@ -438,20 +419,22 @@ public enum MediaType {
 	}
 
 	public static final MediaType fromMeta(Map<?, ?> meta) {
-		if (meta.containsKey("recManualProgramAiring")) {
+		String path = MediaHandler.trim(selectUnique(meta, "path"));
+
+		if (path.startsWith("/recordings/programs/")) {
 			return Manual;
-		} else if (meta.containsKey("recMovieAiring")) {
+		} else if (path.startsWith("/recordings/movies/")) {
 			return Movie;
-		} else if (meta.containsKey("recSportEvent")) {
+		} else if (path.startsWith("/recordings/sports/")) {
 			return Sports;
-		} else if (meta.containsKey("recEpisode")) {
+		} else if (path.startsWith("/recordings/series/")) {
 			return TV;
 		} else {
 			return Unknown;
 		}
 	}
 
-	final static String padLeft(String string, int length, char padChar) {
+	static final String padLeft(String string, int length, char padChar) {
 		int pad = length - string.length();
 
 		if (pad > 0) {
@@ -465,10 +448,6 @@ public enum MediaType {
 		}
 
 		return string;
-	}
-
-	final static String trim(String string) {
-		return string != null ? string.trim() : "";
 	}
 
 	public abstract MediaHandler handler(String directory);

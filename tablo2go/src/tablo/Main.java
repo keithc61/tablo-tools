@@ -18,21 +18,20 @@ import java.util.Properties;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class Main {
 
 	private static final class Options {
 
-		private static Predicate<String> always(Consumer<String> consumer) {
+		private static <T> Predicate<T> always(Consumer<T> consumer) {
 			return input -> {
 				consumer.accept(input);
 				return true;
 			};
 		}
 
-		private static Predicate<String> consumeIf(Predicate<String> test, Consumer<String> consumer) {
+		private static <T> Predicate<T> consumeIf(Predicate<T> test, Consumer<T> consumer) {
 			return test.and(always(consumer));
 		}
 
@@ -157,8 +156,6 @@ public final class Main {
 
 	}
 
-	private static int FIRMWARE_VERSION = 20212; // 2.2.12
-
 	private static final int TABLO_API_PORT = 8885;
 
 	private static final int TABLO_PORT = 18080;
@@ -196,35 +193,10 @@ public final class Main {
 		new Main(args).run();
 	}
 
-	private static List<String> readVideoIds(String ip) throws IOException {
-		URL tablo = new URL("http", ip, TABLO_PORT, "/");
-		List<String> videoIds;
-
-		if (FIRMWARE_VERSION < 20212) {
-			// This worked with firmware prior to 2.2.12.
-			videoIds = Util.selectJSON(new URL(tablo, "/plex/rec_ids"), "ids.*");
-		} else {
-			String index = Util.readIndex(tablo);
-			Pattern href = Pattern.compile("<a\\s+href\\s*=\\s*\"(\\d+)/\">", Pattern.CASE_INSENSITIVE);
-			Matcher matcher = href.matcher(index);
-
-			videoIds = new ArrayList<>();
-
-			while (matcher.find()) {
-				videoIds.add(matcher.group(1));
-			}
-		}
-
-		return videoIds;
-	}
-
-	private static void showAirings(String ip) throws IOException {
+	private static List<String> readAirings(String ip) throws IOException {
 		URL airings = new URL("http", ip, TABLO_API_PORT, "/recordings/airings");
 
-		System.out.println();
-		System.out.println("Airings:");
-		Util.selectJSON(airings, "*") // <br/>
-				.forEach(airing -> System.out.printf("  %s%n", airing));
+		return Util.selectJSON(airings, "*");
 	}
 
 	private static void showServerInfo(String ip) throws IOException {
@@ -237,15 +209,6 @@ public final class Main {
 			((Map<?, ?>) info) // <br/>
 					.forEach((k, v) -> System.out.printf("  %s: %s%n", k, v));
 		}
-	}
-
-	private static void showShows(String ip) throws IOException {
-		URL shows = new URL("http", ip, TABLO_API_PORT, "/recordings/shows");
-
-		System.out.println();
-		System.out.println("Shows:");
-		Util.selectJSON(shows, "*") // <br/>
-				.forEach(show -> System.out.printf("  %s%n", show));
 	}
 
 	private String crf;
@@ -335,7 +298,7 @@ public final class Main {
 		applyConfig(config, "unfinished", this::setUnfinished);
 
 		applyConfig(config, "tablo", value -> {
-			Arrays.stream(value.split("\\s*,\\s*")) // <br/>
+			Arrays.stream(value.split(",")) // <br/>
 					.map(String::trim) // <br/>
 					.filter(ip -> !ip.isEmpty()) // <br/>
 					.forEach(tablos::add);
@@ -349,31 +312,31 @@ public final class Main {
 		List<Runnable> actions = new ArrayList<>();
 
 		for (String ip : tablos) {
-			List<String> videoIds = readVideoIds(ip);
-
 			if (debug) {
-				int count = videoIds.size();
-
-				System.out.printf("Found %d video%s at %s.\n", // <br/>
-						Integer.valueOf(count), count == 1 ? "" : "s", ip);
-
 				showServerInfo(ip);
-				showShows(ip);
-				showAirings(ip);
 			}
 
-			videoIds.sort(idComparator());
+			List<String> airings = readAirings(ip);
 
-			for (String videoId : videoIds) {
-				URL video;
+			if (debug) {
+				int count = airings.size();
+
+				System.out.println();
+				System.out.printf("Found %d video%s at %s.\n", // <br/>
+						Integer.valueOf(count), count == 1 ? "" : "s", ip);
+			}
+
+			Map<String, Runnable> pendingActions = new TreeMap<>(idComparator());
+
+			for (String airing : airings) {
+				URL airingUrl = new URL("http", ip, TABLO_API_PORT, airing);
 				Map<?, ?> meta;
 
 				try {
-					video = new URL("http", ip, TABLO_PORT, "/pvr/" + videoId + '/');
-					meta = (Map<?, ?>) Util.readJSON(new URL(video, "meta.txt"));
+					meta = (Map<?, ?>) Util.readJSON(airingUrl);
 				} catch (IOException e) {
 					System.err.println("Failed to fetch metadata for " // <br/>
-							+ videoId + ": " + e.getLocalizedMessage());
+							+ airing + ": " + e.getLocalizedMessage());
 					continue;
 				}
 
@@ -385,12 +348,17 @@ public final class Main {
 				}
 
 				if (listOnly) {
-					System.out.printf("Video: %s\n", videoId);
+					System.out.printf("Video: %s\n", airing);
 					handler.printMeta(System.out, meta);
 				} else if (includeUnfinished || handler.isFinished(meta)) {
-					actions.add(() -> save(video, handler, meta));
+					String videoId = airing.substring(airing.lastIndexOf('/') + 1);
+					URL video = new URL("http", ip, TABLO_PORT, "/pvr/" + videoId + '/');
+
+					pendingActions.put(videoId, () -> save(video, handler, meta));
 				}
 			}
+
+			actions.addAll(pendingActions.values());
 		}
 
 		actions.stream().forEach(Runnable::run);
