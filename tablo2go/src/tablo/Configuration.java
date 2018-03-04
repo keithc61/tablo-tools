@@ -1,6 +1,8 @@
 package tablo;
 
-public interface MediaSelector {
+public interface Configuration {
+
+	String directoryFor(MediaType mediaType);
 
 	boolean isSelectedEpisode(String episode);
 
