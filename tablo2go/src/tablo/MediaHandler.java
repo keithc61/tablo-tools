@@ -321,6 +321,20 @@ public abstract class MediaHandler {
 			return getAndTrim("originalAirDate");
 		}
 
+		@Override
+		public Map<String, String> getPersistentMetadata() {
+			Map<String, String> persistent = new HashMap<>();
+
+			persistent.put("show", getSeries());
+			persistent.put("title", getTitle());
+			persistent.put("season_number", getSeason());
+			persistent.put("episode_sort", getEpisode());
+
+			persistent.values().removeIf(String::isEmpty);
+
+			return persistent;
+		}
+
 		private String getSeason() {
 			return getAndTrim("season");
 		}
