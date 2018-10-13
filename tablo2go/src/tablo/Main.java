@@ -1,103 +1,31 @@
 package tablo;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
 import java.util.TreeMap;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
+
 public final class Main {
-
-	private static final class ConfigImpl implements Configuration {
-
-		private static boolean isSelectedIn(String value, RangeList list) {
-			if (value != null) {
-				try {
-					return list.isEmpty() || list.contains(Integer.parseInt(value));
-				} catch (NumberFormatException e) {
-					// ignore
-				}
-			}
-
-			return false;
-		}
-
-		private final RangeList episodes;
-
-		private final Map<MediaType, String> mediaDirectory;
-
-		private final RangeList seasons;
-
-		private final List<Pattern> titles;
-
-		ConfigImpl(Map<MediaType, String> mediaDirectory) {
-			super();
-			this.episodes = new RangeList();
-			this.mediaDirectory = mediaDirectory;
-			this.seasons = new RangeList();
-			this.titles = new ArrayList<>();
-		}
-
-		void addEpisodes(String list) {
-			episodes.addRanges(list);
-		}
-
-		void addSeasons(String list) {
-			seasons.addRanges(list);
-		}
-
-		void addTitle(String title) throws IllegalArgumentException {
-			if (title.isEmpty()) {
-				throw new IllegalArgumentException(title);
-			}
-
-			titles.add(Pattern.compile(title, Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
-		}
-
-		@Override
-		public String directoryFor(MediaType mediaType) {
-			return mediaDirectory.get(mediaType);
-		}
-
-		@Override
-		public boolean isSelectedEpisode(String episode) {
-			return isSelectedIn(episode, episodes);
-		}
-
-		@Override
-		public boolean isSelectedSeason(String season) {
-			return isSelectedIn(season, seasons);
-		}
-
-		@Override
-		public boolean isSelectedTitle(String title) {
-			if (title == null) {
-				return false;
-			} else if (titles.isEmpty()) {
-				return true;
-			} else {
-				return titles.stream() // <br/>
-						.anyMatch(pattern -> pattern.matcher(title).find());
-			}
-		}
-
-	}
 
 	private static final class Options {
 
@@ -133,11 +61,11 @@ public final class Main {
 			handlers = new ArrayList<>();
 		}
 
-		void flag(String name, Runnable action) {
+		void flag(String name, Consumer<String> consumer) {
 			Objects.requireNonNull(name);
-			Objects.requireNonNull(action);
+			Objects.requireNonNull(consumer);
 
-			handlers.add(consumeIf(isFlag(name), input -> action.run()));
+			handlers.add(consumeIf(isFlag(name), input -> consumer.accept(name)));
 		}
 
 		void handle(String input) {
@@ -147,32 +75,23 @@ public final class Main {
 			}
 		}
 
-		void regex(String regex, Consumer<String> consumer) {
-			Objects.requireNonNull(regex);
-			Objects.requireNonNull(consumer);
-
-			handlers.add(consumeIf(matches(regex, Pattern.CASE_INSENSITIVE), consumer));
-		}
-
-		void value(String name, Consumer<String> consumer) {
+		void value(String name, BiConsumer<String, String> consumer) {
 			Objects.requireNonNull(name);
 			Objects.requireNonNull(consumer);
 
 			Predicate<String> test = matches("^-\\Q" + name + "\\E=.+", Pattern.CASE_INSENSITIVE);
 			int offset = name.length() + 2;
 
-			handlers.add(consumeIf(test, input -> consumer.accept(input.substring(offset))));
+			handlers.add(consumeIf(test, input -> consumer.accept(name, input.substring(offset))));
+		}
+
+		void value(String name, Consumer<String> consumer) {
+			value(name, (n, value) -> consumer.accept(value));
 		}
 
 	}
 
 	private static final int TABLO_API_PORT = 8885;
-
-	// private static final int TABLO_PORT = 18080;
-
-	private static void applyConfig(Map<String, String> config, String name, Consumer<? super String> action) {
-		Optional.ofNullable(config.get(name)).ifPresent(action);
-	}
 
 	private static List<String> getLocalTabloIps() throws IOException {
 		URL url = new URL("https://api.tablotv.com/assocserver/getipinfo/");
@@ -180,13 +99,13 @@ public final class Main {
 		return Util.selectJSON(url, "cpes.*.private_ip");
 	}
 
-	private static URL getPlaylistURL(String tablo, String airing) throws IOException {
+	public static URL getPlaylistURL(String tablo, String airing) throws IOException {
 		URL watchUrl = new URL("http", tablo, TABLO_API_PORT, airing + "/watch");
 		HttpURLConnection connection = (HttpURLConnection) watchUrl.openConnection();
 
 		connection.setRequestMethod("POST");
 
-		Map<?, ?> watchData = (Map<?, ?>) Util.readJSON(new InputStreamReader(connection.getInputStream(), Util.UTF_8));
+		Map<?, ?> watchData = (Map<?, ?>) Util.readJSON(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
 		String playlistUrl = Util.selectUnique(watchData, "playlist_url");
 
 		return playlistUrl != null ? new URL(playlistUrl) : null;
@@ -194,21 +113,6 @@ public final class Main {
 
 	private static Comparator<String> idComparator() {
 		return Comparator.comparing(String::length).thenComparing(Comparator.naturalOrder());
-	}
-
-	private static Map<String, String> loadPropertyMap(String fileName) throws IOException {
-		Properties properties = new Properties();
-
-		try (InputStream in = new FileInputStream(fileName)) {
-			properties.load(in);
-		}
-
-		Map<String, String> config = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-		Consumer<String> action = key -> config.put(key, properties.getProperty(key));
-
-		properties.stringPropertyNames().stream().forEach(action);
-
-		return config;
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -233,72 +137,26 @@ public final class Main {
 		}
 	}
 
-	private File cacheFile;
+	private final Map<String, String> options;
 
-	private String crf;
+	private final List<Recording> recordings;
 
-	private boolean debug;
-
-	private String ffmpeg;
-
-	private boolean includeUnfinished;
-
-	private boolean listOnly;
-
-	private final Map<MediaType, String> mediaDirectory;
-
-	private boolean overwrite;
-
-	private final ConfigImpl selector;
-
-	private final List<String> tablos;
-
-	private boolean timestamp;
-
-	private String videoRate;
+	private final Collection<String> tablos;
 
 	private Main(String[] args) throws IllegalArgumentException, IOException {
 		super();
-		this.cacheFile = null;
-		this.crf = null;
-		this.debug = false;
-		this.ffmpeg = "ffmpeg";
-		this.includeUnfinished = false;
-		this.listOnly = false;
-		this.mediaDirectory = new HashMap<>();
-		this.overwrite = false;
-		this.selector = new ConfigImpl(mediaDirectory);
-		this.tablos = new ArrayList<>();
-		this.timestamp = false;
-		this.videoRate = null;
+		this.options = new HashMap<>();
+		this.recordings = new ArrayList<>();
+
+		// install defaults
+		options.put("ffmpeg", "ffmpeg");
 
 		handleOptions(args);
-	}
 
-	private void handleOptions(String[] args) throws IOException {
-		Options options = new Options();
+		this.tablos = new LinkedHashSet<>(Arrays.asList(options.getOrDefault("tablos", "").split(",")));
 
-		options.value("cache", this::setCacheFile);
-		options.value("config", this::readConfig);
-		options.flag("debug", this::setDebug);
-		options.value("crf", this::setCrf);
-		options.value("episode", selector::addEpisodes);
-		options.value("ffmpeg", this::setFfmpeg);
-		options.flag("list", this::setListOnly);
-		options.flag("overwrite", this::setOverwrite);
-		options.value("season", selector::addSeasons);
-		options.value("tablo", tablos::add);
-		options.flag("timestamp", this::setTimestamp);
-		options.value("unfinished", this::setUnfinished);
-		options.value("videorate", this::setVideoRate);
-
-		MediaType.forEach( // <br/>
-				type -> options.value(type.name(), // <br/>
-						input -> mediaDirectory.put(type, input)));
-
-		options.regex("^[^-].*", input -> selector.addTitle(input.trim()));
-
-		Arrays.stream(args).forEach(options::handle);
+		tablos.removeIf(String::isEmpty);
+		tablos.removeIf(ip -> "auto".equalsIgnoreCase(ip));
 
 		// if no tablos were specifically identified, use all local devices
 		if (tablos.isEmpty()) {
@@ -306,41 +164,48 @@ public final class Main {
 		}
 	}
 
-	private void readConfig(String fileName) {
-		Map<String, String> config;
+	private void handleOptions(String[] args) {
+		Consumer<String> setFlag = name -> options.put(name, "true");
+		BiConsumer<String, String> setOption = options::put;
 
+		Options handler = new Options();
+
+		handler.value("cache", setOption);
+		handler.value("config", this::readConfig);
+		handler.flag("debug", setFlag);
+		handler.value("crf", setOption);
+		handler.value("ffmpeg", setOption);
+		handler.flag("list", setFlag);
+		handler.flag("overwrite", setFlag);
+		handler.value("tablos", setOption);
+		handler.flag("timestamp", setFlag);
+		handler.flag("unfinished", setFlag);
+		handler.value("videorate", setOption);
+
+		Arrays.stream(args).forEach(handler::handle);
+	}
+
+	private void readConfig(String fileName) {
 		try {
-			config = loadPropertyMap(fileName);
-		} catch (IOException e) {
+			Configuration.parse(fileName, recordings, options);
+		} catch (IOException | ParserConfigurationException | SAXException e) {
 			throw new IllegalArgumentException(e);
 		}
-
-		applyConfig(config, "cache", this::setCacheFile);
-		applyConfig(config, "crf", this::setCrf);
-		applyConfig(config, "debug", this::setDebug);
-		applyConfig(config, "ffmpeg", this::setFfmpeg);
-		applyConfig(config, "overwrite", this::setOverwrite);
-		applyConfig(config, "timestamp", this::setTimestamp);
-		applyConfig(config, "unfinished", this::setUnfinished);
-		applyConfig(config, "videoRate", this::setVideoRate);
-
-		applyConfig(config, "tablo", value -> {
-			Arrays.stream(value.split(",")) // <br/>
-					.map(String::trim) // <br/>
-					.filter(ip -> !ip.isEmpty()) // <br/>
-					.forEach(tablos::add);
-		});
-
-		MediaType.forEach(type -> applyConfig(config, type.name(), // <br/>
-				value -> mediaDirectory.put(type, value)));
 	}
 
 	private void run() throws IOException {
 		List<Runnable> actions = new ArrayList<>();
 		Cache cache = new Cache();
+		File cacheFile = null;
+		String cacheFilename = options.get("cache");
+		boolean debug = Boolean.parseBoolean(options.get("debug"));
 
-		if (cacheFile != null && cacheFile.isFile() && cacheFile.canRead()) {
-			cache.load(cacheFile);
+		if (cacheFilename != null) {
+			cacheFile = new File(cacheFilename);
+
+			if (cacheFile.isFile() && cacheFile.canRead()) {
+				cache.load(cacheFile);
+			}
 		}
 
 		for (String ip : tablos) {
@@ -384,24 +249,15 @@ public final class Main {
 					handler.cacheAttributes(cache, ip, airing);
 				}
 
-				if (!handler.isSelected(selector)) {
+				Runnable action = handler.getAction(ip, airing, recordings);
+
+				if (action == null) {
 					continue;
 				}
 
-				if (listOnly) {
-					System.out.printf("Video: %s\n", airing);
-					handler.printMeta(System.out);
-				} else if (includeUnfinished || handler.isFinished()) {
-					URL playlist = getPlaylistURL(ip, airing);
+				String videoId = airing.substring(airing.lastIndexOf('/') + 1);
 
-					if (playlist == null) {
-						System.err.println("Failed to get playlist URL for " + airing);
-					} else {
-						String videoId = airing.substring(airing.lastIndexOf('/') + 1);
-
-						pendingActions.put(videoId, () -> save(playlist, handler));
-					}
-				}
+				pendingActions.put(videoId, action);
 			}
 
 			actions.addAll(pendingActions.values());
@@ -412,184 +268,6 @@ public final class Main {
 		}
 
 		actions.stream().forEach(Runnable::run);
-	}
-
-	private void save(URL video, MediaHandler handler) {
-		try {
-			File dest = handler.getTargetFile(selector);
-
-			if (dest == null) {
-				System.out.println("Skipping " + video);
-				return;
-			}
-
-			File folder = dest.getParentFile();
-
-			folder.mkdirs();
-
-			if (!folder.isDirectory()) {
-				System.out.println("Skipping " + video + "; " + folder + " is not a directory");
-				return;
-			}
-
-			boolean fetch = overwrite;
-
-			if (dest.createNewFile()) {
-				System.out.println("Saving " + dest.getAbsolutePath());
-				fetch = true;
-			} else if (overwrite) {
-				System.out.println("Overwriting " + dest.getAbsolutePath());
-			} else if (!timestamp) {
-				System.out.println("Skipping existing file " + dest.getAbsolutePath());
-			}
-
-			if (fetch) {
-				// ffmpeg doesn't like non-ASCII filenames
-				File temp = File.createTempFile("tablo-", ".tmp", folder);
-
-				try {
-					Process process = startFilter(video, temp, handler.getPersistentMetadata());
-
-					try {
-						process.waitFor();
-					} catch (InterruptedException e) {
-						// ignore
-					}
-
-					if (!(dest.delete() && temp.renameTo(dest))) {
-						System.err.format("Failed to rename %s to '%s'%n", temp.getName(), dest.getName());
-					}
-				} finally {
-					// remove temporary files on failure
-					// (this does nothing if the file was successfully renamed)
-					temp.delete();
-				}
-			}
-
-			if (timestamp) {
-				Calendar time = handler.getTime();
-
-				if (time != null) {
-					if (!fetch) {
-						System.out.println("Updating timestamp for " + dest.getAbsolutePath());
-					}
-
-					if (time.get(Calendar.YEAR) < 1970) {
-						System.out.println("Clamping timestamp to 1970 for " + dest.getAbsolutePath());
-						time.set(Calendar.YEAR, 1970);
-					}
-
-					dest.setLastModified(time.getTimeInMillis());
-				} else if (debug) {
-					System.out.println("No timestamp provided for " + dest.getAbsolutePath());
-				}
-			}
-		} catch (IOException e) {
-			System.err.println("Failed to save " + video + ": " + e.getLocalizedMessage());
-		}
-	}
-
-	private void setCacheFile(String fileName) {
-		cacheFile = new File(fileName);
-	}
-
-	private void setCrf(String value) {
-		crf = value;
-	}
-
-	private void setDebug() {
-		debug = true;
-	}
-
-	private void setDebug(String value) {
-		debug = Boolean.parseBoolean(value);
-	}
-
-	private void setFfmpeg(String value) {
-		ffmpeg = value;
-	}
-
-	private void setListOnly() {
-		listOnly = true;
-	}
-
-	private void setOverwrite() {
-		overwrite = true;
-	}
-
-	private void setOverwrite(String value) {
-		overwrite = Boolean.parseBoolean(value);
-	}
-
-	private void setTimestamp() {
-		timestamp = true;
-	}
-
-	private void setTimestamp(String value) {
-		timestamp = Boolean.parseBoolean(value);
-	}
-
-	private void setUnfinished(String value) {
-		includeUnfinished = Boolean.parseBoolean(value);
-	}
-
-	private void setVideoRate(String value) {
-		videoRate = value;
-	}
-
-	private Process startFilter(URL input, File output, Map<String, String> metadata) throws IOException {
-		List<String> command = new ArrayList<>(20);
-
-		command.add("nice");
-
-		command.add(ffmpeg);
-
-		command.add("-y");
-
-		command.add("-loglevel");
-		command.add("error");
-
-		command.add("-nostdin");
-
-		command.add("-nostats");
-
-		command.add("-i");
-		command.add(input.toExternalForm());
-
-		command.add("-bsf:a");
-		command.add("aac_adtstoasc");
-
-		if (crf != null) {
-			command.add("-c:a");
-			command.add("copy");
-
-			command.add("-crf");
-			command.add(crf);
-		} else if (videoRate != null) {
-			command.add("-c:a");
-			command.add("copy");
-
-			command.add("-b:v");
-			command.add(videoRate);
-		} else {
-			command.add("-c");
-			command.add("copy");
-		}
-
-		metadata.forEach((key, value) -> {
-			command.add("-metadata");
-			command.add(key + "=" + value);
-		});
-
-		command.add("-f");
-		command.add("mp4");
-
-		command.add(output.getAbsolutePath());
-
-		return new ProcessBuilder(command) // <br/>
-				.redirectError(ProcessBuilder.Redirect.INHERIT) // <br/>
-				.redirectOutput(ProcessBuilder.Redirect.INHERIT) // <br/>
-				.start();
 	}
 
 }

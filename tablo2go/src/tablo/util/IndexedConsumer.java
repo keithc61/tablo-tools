@@ -1,6 +1,7 @@
 package tablo.util;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.ObjIntConsumer;
 import java.util.stream.Stream;
@@ -21,13 +22,13 @@ public final class IndexedConsumer<T> implements Consumer<T> {
 
 	private IndexedConsumer(ObjIntConsumer<T> action) {
 		super();
-		this.action = action;
-		this.index = -1;
+		this.action = Objects.requireNonNull(action);
+		this.index = 0;
 	}
 
 	@Override
 	public void accept(T value) {
-		action.accept(value, ++index);
+		action.accept(value, index++);
 	}
 
 }

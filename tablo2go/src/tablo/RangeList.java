@@ -24,9 +24,8 @@ public final class RangeList {
 			this.max = max;
 		}
 
-		@SuppressWarnings("hiding")
-		boolean contains(int min, int max) {
-			return this.min <= min && min <= max && max <= this.max;
+		boolean contains(int rangeMin, int rangeMax) {
+			return this.min <= rangeMin && rangeMin <= rangeMax && rangeMax <= this.max;
 		}
 
 		@Override

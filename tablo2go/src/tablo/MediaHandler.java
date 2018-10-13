@@ -6,14 +6,19 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Pattern;
+
+import tablo.util.StringTemplate;
 
 public abstract class MediaHandler {
 
@@ -36,37 +41,28 @@ public abstract class MediaHandler {
 		}
 
 		@Override
-		public File getTargetFile(Configuration configuration) {
-			String directory = configuration.directoryFor(MediaType.Manual);
-
-			if (directory == null) {
-				return null;
-			}
-
+		protected Map<String, String> getTemplateMap(Recording recording) {
 			String title = getTitle();
 
 			if (title.isEmpty()) {
 				return null;
 			}
 
-			StringBuilder fileName = new StringBuilder();
+			Map<String, String> values = new HashMap<>();
 
-			fileName.append(title);
+			values.put("title", title);
 
 			Calendar time = getTime();
 
 			if (time != null) {
-				fileName.append(' ');
-				fileName.append(FileTimeFormat.format(time.getTime()));
+				values.put("time", " " + FileTimeFormat.format(time.getTime()));
 			}
 
-			fileName.append(".mp4");
-
-			return Paths.get(directory, fixFilename(fileName.toString())).toFile();
+			return values;
 		}
 
 		@Override
-		public Calendar getTime() {
+		protected Calendar getTime() {
 			return Util.parseAirTime(getAirDate());
 		}
 
@@ -75,9 +71,9 @@ public abstract class MediaHandler {
 		}
 
 		@Override
-		public boolean isSelected(Configuration configuration) {
-			return configuration.directoryFor(MediaType.Manual) != null // <br/>
-					&& configuration.isSelectedTitle(getTitle());
+		public boolean isSelected(Recording recording) {
+			return isSelectedType(recording, "Manual") // <br/>
+					&& isSelectedName(recording, getTitle());
 		}
 
 		@Override
@@ -144,33 +140,28 @@ public abstract class MediaHandler {
 		}
 
 		@Override
-		public File getTargetFile(Configuration configuration) {
-			String directory = configuration.directoryFor(MediaType.Movie);
-
-			if (directory == null) {
-				return null;
-			}
-
+		protected Map<String, String> getTemplateMap(Recording recording) {
 			String title = getTitle();
 
 			if (title.isEmpty()) {
 				return null;
 			}
 
-			StringBuilder buffer = new StringBuilder(title);
+			Map<String, String> values = new HashMap<>();
+
+			values.put("title", title);
+
 			int year = getYear();
 
 			if (year != 0) {
-				buffer.append(" (").append(year).append(')');
+				values.put("year", " (" + year + ')');
 			}
 
-			String filename = buffer.append(".mp4").toString();
-
-			return Paths.get(directory, fixFilename(filename)).toFile();
+			return values;
 		}
 
 		@Override
-		public Calendar getTime() {
+		protected Calendar getTime() {
 			Calendar time = null;
 			int year = getYear();
 
@@ -204,9 +195,9 @@ public abstract class MediaHandler {
 		}
 
 		@Override
-		public boolean isSelected(Configuration configuration) {
-			return configuration.directoryFor(MediaType.Movie) != null // <br/>
-					&& configuration.isSelectedTitle(getTitle());
+		public boolean isSelected(Recording recording) {
+			return isSelectedType(recording, "Movie") // <br/>
+					&& isSelectedName(recording, getTitle());
 		}
 
 		@Override
@@ -237,37 +228,28 @@ public abstract class MediaHandler {
 		}
 
 		@Override
-		public File getTargetFile(Configuration configuration) {
-			String directory = configuration.directoryFor(MediaType.Sports);
-
-			if (directory == null) {
-				return null;
-			}
-
+		protected Map<String, String> getTemplateMap(Recording recording) {
 			String title = getTitle();
 
 			if (title.isEmpty()) {
 				return null;
 			}
 
-			StringBuilder fileName = new StringBuilder();
+			Map<String, String> values = new HashMap<>();
 
-			fileName.append(title);
+			values.put("title", title);
 
 			Calendar time = getTime();
 
 			if (time != null) {
-				fileName.append(' ');
-				fileName.append(FileTimeFormat.format(time.getTime()));
+				values.put("time", " " + FileTimeFormat.format(time.getTime()));
 			}
 
-			fileName.append(".mp4");
-
-			return Paths.get(directory, fixFilename(fileName.toString())).toFile();
+			return values;
 		}
 
 		@Override
-		public Calendar getTime() {
+		protected Calendar getTime() {
 			return Util.parseAirTime(getAirDate());
 		}
 
@@ -276,9 +258,9 @@ public abstract class MediaHandler {
 		}
 
 		@Override
-		public boolean isSelected(Configuration configuration) {
-			return configuration.directoryFor(MediaType.Sports) != null // <br/>
-					&& configuration.isSelectedTitle(getTitle());
+		public boolean isSelected(Recording recording) {
+			return isSelectedType(recording, "Sports") // <br/>
+					&& isSelectedName(recording, getTitle());
 		}
 
 		@Override
@@ -293,6 +275,42 @@ public abstract class MediaHandler {
 	private static final class TV extends MediaHandler {
 
 		private static final DateFormat AirDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		private static final boolean isSelectedEpisode(Recording recording, String episode) {
+			if (episode == null) {
+				return false;
+			}
+
+			String episodes = recording.getOption("episodes");
+
+			if (episodes == null) {
+				return true;
+			}
+
+			RangeList list = new RangeList();
+
+			list.addRanges(episodes);
+
+			return isSelectedIn(episode, list);
+		}
+
+		private static final boolean isSelectedSeason(Recording recording, String season) {
+			if (season == null) {
+				return false;
+			}
+
+			String seasons = recording.getOption("seasons");
+
+			if (seasons == null) {
+				return true;
+			}
+
+			RangeList list = new RangeList();
+
+			list.addRanges(seasons);
+
+			return isSelectedIn(season, list);
+		}
 
 		TV(Map<String, String> attributes) {
 			super(attributes);
@@ -344,37 +362,25 @@ public abstract class MediaHandler {
 		}
 
 		@Override
-		public File getTargetFile(Configuration configuration) {
-			String directory = configuration.directoryFor(MediaType.TV);
-
-			if (directory == null) {
-				return null;
-			}
-
+		protected Map<String, String> getTemplateMap(Recording recording) {
 			String series = getSeries();
 
 			if (series.isEmpty()) {
 				return null;
 			}
 
-			StringBuilder fileName = new StringBuilder();
-			String season = getSeason();
-			String episode = getEpisode();
-			String title = getTitle();
+			Map<String, String> values = new HashMap<>();
 
-			fileName.append(season).append(padLeft(episode, 2, '0'));
+			values.put("series", series);
+			values.put("season", getSeason());
+			values.put("episode", getEpisode());
+			values.put("title", getTitle());
 
-			if (!title.isEmpty()) {
-				fileName.append(' ').append(title);
-			}
-
-			fileName.append(".mp4");
-
-			return Paths.get(directory, fixFilename(series), fixFilename(fileName.toString())).toFile();
+			return values;
 		}
 
 		@Override
-		public Calendar getTime() {
+		protected Calendar getTime() {
 			Calendar time = Util.parseAirTime(getAirDate());
 
 			if (time != null) {
@@ -396,11 +402,11 @@ public abstract class MediaHandler {
 		}
 
 		@Override
-		public boolean isSelected(Configuration configuration) {
-			return configuration.directoryFor(MediaType.TV) != null // <br/>
-					&& configuration.isSelectedTitle(getSeries()) // <br/>
-					&& configuration.isSelectedSeason(getSeason()) // <br/>
-					&& configuration.isSelectedEpisode(getEpisode());
+		public boolean isSelected(Recording recording) {
+			return isSelectedType(recording, "TV") // <br/>
+					&& isSelectedName(recording, getSeries()) // <br/>
+					&& isSelectedSeason(recording, getSeason()) // <br/>
+					&& isSelectedEpisode(recording, getEpisode());
 		}
 
 		@Override
@@ -420,16 +426,24 @@ public abstract class MediaHandler {
 
 	private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
-	protected static final String fixFilename(String name) {
+	private static boolean booleanOption(Recording recording, String name) {
+		return Boolean.parseBoolean(recording.getOption(name));
+	}
+
+	protected static final String fixPathSegment(String segment) {
+		if (segment == null) {
+			return null;
+		}
+
 		StringBuilder buffer = new StringBuilder();
 
-		for (char ch : name.toCharArray()) {
+		for (char ch : segment.toCharArray()) {
 			switch (ch) {
 			case '\0':
 			case '<':
 			case '>':
 			case ':':
-			case '\"':
+			case '"':
 			case '/':
 			case '\\':
 			case '|':
@@ -448,6 +462,38 @@ public abstract class MediaHandler {
 		}
 
 		return buffer.toString();
+	}
+
+	protected static final boolean isSelectedIn(String value, RangeList list) {
+		if (value != null) {
+			try {
+				return list.isEmpty() || list.contains(Integer.parseInt(value));
+			} catch (NumberFormatException e) {
+				// ignore
+			}
+		}
+
+		return false;
+	}
+
+	protected static final boolean isSelectedName(Recording recording, String title) {
+		if (title == null) {
+			return false;
+		}
+
+		String name = recording.getOption("name");
+
+		if (name == null) {
+			return true;
+		}
+
+		Pattern pattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
+
+		return pattern.matcher(title).find();
+	}
+
+	protected static final boolean isSelectedType(Recording recording, String type) {
+		return Objects.requireNonNull(type).equalsIgnoreCase(recording.getOption("type"));
 	}
 
 	public static MediaHandler newInstance(String airing, Map<String, String> attributes) {
@@ -496,6 +542,63 @@ public abstract class MediaHandler {
 		return string;
 	}
 
+	private static Process startFilter(Recording recording, URL input, File output, Map<String, String> metadata)
+			throws IOException {
+		List<String> command = new ArrayList<>(20);
+		String option;
+
+		command.add("nice");
+
+		command.add(recording.getOption("ffmpeg"));
+
+		command.add("-y");
+
+		command.add("-loglevel");
+		command.add("error");
+
+		command.add("-nostdin");
+
+		command.add("-nostats");
+
+		command.add("-i");
+		command.add(input.toExternalForm());
+
+		command.add("-bsf:a");
+		command.add("aac_adtstoasc");
+
+		if ((option = recording.getOption("crf")) != null) {
+			command.add("-c:a");
+			command.add("copy");
+
+			command.add("-crf");
+			command.add(option);
+		} else if ((option = recording.getOption("videoRate")) != null) {
+			command.add("-c:a");
+			command.add("copy");
+
+			command.add("-b:v");
+			command.add(option);
+		} else {
+			command.add("-c");
+			command.add("copy");
+		}
+
+		metadata.forEach((key, value) -> {
+			command.add("-metadata");
+			command.add(key + "=" + value);
+		});
+
+		command.add("-f");
+		command.add("mp4");
+
+		command.add(output.getAbsolutePath());
+
+		return new ProcessBuilder(command) // <br/>
+				.redirectError(ProcessBuilder.Redirect.INHERIT) // <br/>
+				.redirectOutput(ProcessBuilder.Redirect.INHERIT) // <br/>
+				.start();
+	}
+
 	protected static final String trim(String string) {
 		return string != null ? string.trim() : "";
 	}
@@ -538,6 +641,38 @@ public abstract class MediaHandler {
 		processMetadata(meta);
 	}
 
+	/**
+	 * @param ip
+	 * @param airing
+	 * @param recordings
+	 * @return
+	 * @throws IOException
+	 */
+	public final Runnable getAction(String ip, String airing, List<Recording> recordings) throws IOException {
+		for (Recording recording : recordings) {
+			if (isSelected(recording)) {
+				if (booleanOption(recording, "list")) {
+					return () -> {
+						System.out.printf("Video: %s\n", airing);
+						printMeta(System.out);
+					};
+				} else if (booleanOption(recording, "includeUnfinished") || isFinished()) {
+					URL playlist = Main.getPlaylistURL(ip, airing);
+
+					if (playlist == null) {
+						System.err.println("Failed to get playlist URL for " + airing);
+					} else {
+						return () -> save(recording, playlist);
+					}
+				}
+
+				break;
+			}
+		}
+
+		return null;
+	}
+
 	protected final String getAndTrim(String key) {
 		return attributes.getOrDefault(key, "").trim();
 	}
@@ -551,17 +686,35 @@ public abstract class MediaHandler {
 		return getAndTrim("size");
 	}
 
-	public abstract File getTargetFile(Configuration configuration);
+	protected final File getTargetFile(Recording recording) {
+		String output = recording.getOption("output");
 
-	public abstract Calendar getTime();
+		if (output == null || output.isEmpty()) {
+			return null;
+		}
 
-	public final boolean isFinished() {
+		Map<String, String> values = getTemplateMap(recording);
+
+		if (values == null) {
+			return null;
+		}
+
+		String path = StringTemplate.expand(output, key -> fixPathSegment(values.get(key)));
+
+		return new File(path);
+	}
+
+	protected abstract Map<String, String> getTemplateMap(Recording recording);
+
+	protected abstract Calendar getTime();
+
+	protected final boolean isFinished() {
 		return finished;
 	}
 
-	public abstract boolean isSelected(Configuration configuration);
+	public abstract boolean isSelected(Recording recording);
 
-	public final void printMeta(PrintStream out) {
+	protected final void printMeta(PrintStream out) {
 		Map<String, String> meta = new LinkedHashMap<>();
 
 		addMeta(meta);
@@ -570,14 +723,91 @@ public abstract class MediaHandler {
 
 		int keyWidth = meta.keySet().stream().mapToInt(String::length).max().orElse(0) + 2;
 
-		meta.entrySet().forEach(entry -> out.format("  %s%s%n", // <br/>
-				padRight(entry.getKey() + ":", keyWidth, ' '), // <br/>
-				entry.getValue()));
+		meta.forEach((name, value) -> out.format("  %s%s%n", // <br/>
+				padRight(name + ":", keyWidth, ' '), // <br/>
+				value));
 	}
 
 	protected void processMetadata(Map<?, ?> meta) {
 		finished = "finished".equalsIgnoreCase(trim(selectUnique(meta, "video_details.state")));
 		trimAndSet("size", selectUnique(meta, "video_details.size"));
+	}
+
+	private void save(Recording recording, URL video) {
+		try {
+			File dest = getTargetFile(recording);
+
+			if (dest == null) {
+				System.out.println("Skipping " + video);
+				return;
+			}
+
+			File folder = dest.getParentFile();
+
+			folder.mkdirs();
+
+			if (!folder.isDirectory()) {
+				System.out.println("Skipping " + video + "; " + folder + " is not a directory");
+				return;
+			}
+
+			boolean timestamp = booleanOption(recording, "timestamp");
+			boolean fetch = false;
+
+			if (dest.createNewFile()) {
+				System.out.println("Saving " + dest.getAbsolutePath());
+				fetch = true;
+			} else if (booleanOption(recording, "overwrite")) {
+				System.out.println("Overwriting " + dest.getAbsolutePath());
+				fetch = true;
+			} else if (!timestamp) {
+				System.out.println("Skipping existing file " + dest.getAbsolutePath());
+			}
+
+			if (fetch) {
+				// ffmpeg doesn't like non-ASCII filenames
+				File temp = File.createTempFile("tablo-", ".tmp", folder);
+
+				try {
+					Process process = startFilter(recording, video, temp, getPersistentMetadata());
+
+					try {
+						process.waitFor();
+					} catch (InterruptedException e) {
+						// ignore
+					}
+
+					if (!(dest.delete() && temp.renameTo(dest))) {
+						System.err.format("Failed to rename %s to '%s'%n", temp.getName(), dest.getName());
+					}
+				} finally {
+					// remove temporary files on failure
+					// (this does nothing if the file was successfully renamed)
+					temp.delete();
+				}
+			}
+
+			if (timestamp) {
+				Calendar time = getTime();
+
+				if (time != null) {
+					if (!fetch) {
+						System.out.println("Updating timestamp for " + dest.getAbsolutePath());
+					}
+
+					if (time.get(Calendar.YEAR) < 1970) {
+						System.out.println("Clamping timestamp to 1970 for " + dest.getAbsolutePath());
+						time.set(Calendar.YEAR, 1970);
+					}
+
+					dest.setLastModified(time.getTimeInMillis());
+				} else if (booleanOption(recording, "debug")) {
+					System.out.println("No timestamp provided for " + dest.getAbsolutePath());
+				}
+			}
+		} catch (IOException e) {
+			System.err.println("Failed to save " + video + ": " + e.getLocalizedMessage());
+		}
 	}
 
 	protected final void set(String key, String value) {

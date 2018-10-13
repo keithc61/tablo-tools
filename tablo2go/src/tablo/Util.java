@@ -9,7 +9,7 @@ import java.io.PrintStream;
 import java.io.Reader;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.ZoneId;
@@ -54,8 +54,6 @@ public final class Util {
 			.appendValue(ChronoField.MINUTE_OF_HOUR, 2) // <br/>
 			.toFormatter();
 
-	public static final Charset UTF_8 = Charset.forName("UTF-8");
-
 	public static boolean containsIgnoreCase(Collection<String> values, String search) {
 		Pattern pattern = Pattern.compile(search, Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
 		Predicate<String> finder = value -> pattern.matcher(value.toString()).find();
@@ -87,7 +85,7 @@ public final class Util {
 	}
 
 	public static Reader openReader(URL url) throws IOException {
-		return new InputStreamReader(url.openStream(), UTF_8);
+		return new InputStreamReader(url.openStream(), StandardCharsets.UTF_8);
 	}
 
 	public static Calendar parseAirTime(String time) {

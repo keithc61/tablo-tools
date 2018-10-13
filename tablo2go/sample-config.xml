@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project>
 	<!-- default options -->
+
+	<!-- location of recording data cache -->
+	<option name="cache" value="D:/video/tablo-cache.xml" />
+
 	<!-- set quality for constant quality mode -->
 	<option name="crf" value="25" />
 
-	<!-- TODO -->
+	<!-- enable debugging messages -->
 	<option name="debug" value="false" />
 
-	<!-- TODO -->
+	<!-- path to ffmpeg executable -->
 	<option name="ffmpeg" value="ffmpeg.exe" />
 
 	<!-- instead of saving, just list matching content -->
 	<option name="list" value="false" />
 
-	<!-- TODO -->
-	<option name="output" value="D:/video/%series%/s%season%e%episode% %name%.mp4" />
-
-	<!-- TODO -->
+	<!-- overwrite existing files -->
 	<option name="overwrite" value="false" />
 
 	<!--
@@ -25,28 +26,33 @@
 	-->
 	<option name="tablos" value="auto" />
 
-	<!-- TODO -->
+	<!-- set or update timestamp of output file -->
 	<option name="timestamp" value="false" />
 
-	<!-- set video bitrate (ignored if crf is specified) -->
+	<!-- set video bitrate (crf takes precedence) -->
 	<option name="videorate" value="2000" />
 
 	<!-- valid types (case-insensitive): Manual, Movie, Sports, TV, and Unknown -->
-	<recording type="TV" name="Fallon">
+	<group type="Movies">
+		<!-- nested options and recording elements -->
+		<option name="output" value="D:/video/Movies/raw/${title}${year}.mp4" />
+		<recording name="*"/>
+	</group>
+
+	<group type="TV">
 		<option name="crf" value="20" />
 		<option name="timestamp" value="true" />
+		<option name="output" value="D:/video/${series}/${season}${episode,2} ${title}.mp4" />
 
-		<!--
-		MediaType.forEach(type -> applyConfig(config, type.name(), value -> mediaTypes.put(type, Boolean.valueOf(value))));
-		MediaType.forEach(type -> applyConfig(config, type.name() + ".dir", value -> mediaHandler.put(type, type.handler(value))));
-		 -->
-	</recording>
+		<recording name="The Tonight Show Starring Jimmy Fallon">
+			<option name="episodes" value="0-2" />
+		</recording>
 
-	<recording type="TV" name="Law &amp; Order True Crime: The Menendez Murders">
-		<option name="crf" value="20" />
-		<option name="episodes" value="1-" />
-		<option name="seasons" value="1-" />
-		<option name="timestamp" value="true" />
-		<option name="output" value="D:/video/Law &amp; Order True Crime - The Menendez Murders/s%season%e%episode% %name%.mp4" />
-	</recording>
+		<recording name="Law &amp; Order True Crime: The Menendez Murders">
+			<option name="episodes" value="1-" />
+			<option name="seasons" value="1-" />
+			<option name="output" value="D:/video/Law &amp; Order True Crime - The Menendez Murders/${season}${episode,2} ${title}.mp4" />
+		</recording>
+	</group>
+
 </project>

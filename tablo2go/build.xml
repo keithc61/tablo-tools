@@ -5,7 +5,7 @@
 	<condition property="HOME" value="${env.USERPROFILE}" else="${env.HOME}">
 		<os family="windows" />
 	</condition>
-	<property name="tablo-jar" location="${HOME}/tools/tablo.jar" />
+	<property name="tablo-jar" location="${HOME}/tools/tablo2go.jar" />
 
 	<target name="jar">
 		<jar destfile="${tablo-jar}" filesetmanifest="mergewithoutmain">
