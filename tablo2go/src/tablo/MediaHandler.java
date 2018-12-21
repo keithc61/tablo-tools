@@ -656,14 +656,16 @@ public abstract class MediaHandler {
 						System.out.printf("Video: %s\n", airing);
 						printMeta(System.out);
 					};
-				} else if (booleanOption(recording, "includeUnfinished") || isFinished()) {
+				}
+
+				if (isFinished() || booleanOption(recording, "includeUnfinished")) {
 					URL playlist = Main.getPlaylistURL(ip, airing);
 
-					if (playlist == null) {
-						System.err.println("Failed to get playlist URL for " + airing);
-					} else {
+					if (playlist != null) {
 						return () -> save(recording, playlist);
 					}
+
+					System.err.println("Failed to get playlist URL for " + airing);
 				}
 
 				break;
