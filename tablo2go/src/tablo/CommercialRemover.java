@@ -62,7 +62,7 @@ public final class CommercialRemover {
 					process(arg);
 				}
 			} catch (IOException e) {
-				printError("Error processing: ", arg);
+				printError("Error processing", arg);
 				e.printStackTrace();
 			}
 		}
@@ -145,7 +145,7 @@ public final class CommercialRemover {
 	}
 
 	private static void printError(String label, String argument) {
-		System.err.println(label + argument);
+		System.err.printf("%s: %s%n", label, argument);
 	}
 
 	/**
@@ -158,14 +158,14 @@ public final class CommercialRemover {
 		Matcher matcher = MP4.matcher(fileName);
 
 		if (!matcher.matches()) {
-			printError("Unsupported file type: ", fileName);
+			printError("Unsupported file type", fileName);
 			return;
 		}
 
 		File mp4File = new File(fileName);
 
 		if (!mp4File.exists()) {
-			printError("File not found: ", fileName);
+			printError("File not found", fileName);
 			return;
 		}
 
@@ -173,14 +173,14 @@ public final class CommercialRemover {
 		File edlFile = new File(baseName + EDL_EXTENSION);
 
 		if (!edlFile.exists()) {
-			printError("File not found: ", edlFile.getAbsolutePath());
+			printError("File not found", edlFile.getAbsolutePath());
 			return;
 		}
 
 		File outFile = new File(baseName + "-nc" + matcher.group(2));
 
 		if (outFile.exists()) {
-			printError("Output already exists: ", outFile.getAbsolutePath());
+			printError("Output already exists", outFile.getAbsolutePath());
 			return;
 		}
 
