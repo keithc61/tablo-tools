@@ -626,6 +626,8 @@ public abstract class MediaHandler {
 
 		if (!finished) {
 			meta.put("unfinished", "true");
+		} else if ("false".equalsIgnoreCase(getAndTrim("clean"))) {
+			meta.put("clean", "false");
 		}
 	}
 
@@ -731,6 +733,7 @@ public abstract class MediaHandler {
 	}
 
 	protected void processMetadata(Map<?, ?> meta) {
+		trimAndSet("clean", selectUnique(meta, "video_details.clean"));
 		finished = "finished".equalsIgnoreCase(trim(selectUnique(meta, "video_details.state")));
 		trimAndSet("size", selectUnique(meta, "video_details.size"));
 	}
