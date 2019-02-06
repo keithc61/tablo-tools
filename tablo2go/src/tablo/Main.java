@@ -219,7 +219,7 @@ public final class Main {
 				int count = airings.size();
 
 				System.out.println();
-				System.out.printf("Found %d video%s at %s.\n", // <br/>
+				System.out.printf("Found %d video%s at %s.%n", // <br/>
 						Integer.valueOf(count), count == 1 ? "" : "s", ip);
 			}
 
@@ -247,6 +247,16 @@ public final class Main {
 					}
 
 					handler.cacheAttributes(cache, ip, airing);
+				}
+
+				if (debug) {
+					try {
+						getPlaylistURL(ip, airing);
+					} catch (IOException e) {
+						System.out.println("Failed to get playlist URL for " + airing);
+						handler.printMeta(System.out);
+						continue;
+					}
 				}
 
 				Runnable action = handler.getAction(ip, airing, recordings);
