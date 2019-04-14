@@ -585,7 +585,7 @@ public abstract class MediaHandler {
 
 		metadata.forEach((key, value) -> {
 			command.add("-metadata");
-			command.add(key + "=" + value);
+			command.add(key + "=" + value.replaceAll("'", "\\'"));
 		});
 
 		command.add("-f");
@@ -796,6 +796,13 @@ public abstract class MediaHandler {
 				Calendar time = getTime();
 
 				if (time != null) {
+					int min = time.get(Calendar.MINUTE);
+
+					// truncate to a multiple of 5 minutes
+					min -= min % 5;
+
+					time.set(Calendar.MINUTE, min);
+
 					if (!fetch) {
 						System.out.println("Updating timestamp for " + dest.getAbsolutePath());
 					}
