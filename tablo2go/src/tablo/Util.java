@@ -121,11 +121,11 @@ public final class Util {
 			List<String> values = field.getValue();
 
 			if (values.size() == 1) {
-				out.printf("  %s: %s\n", name, values.get(0));
+				out.printf("  %s: %s%n", name, values.get(0));
 			} else {
-				out.printf("  %s:\n", name);
+				out.printf("  %s:%n", name);
 
-				values.stream().forEach(value -> out.printf("    %s\n", value));
+				values.stream().forEach(value -> out.printf("    %s%n", value));
 			}
 		}
 	}

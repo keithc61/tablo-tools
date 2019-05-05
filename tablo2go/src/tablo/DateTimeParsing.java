@@ -13,7 +13,7 @@ public final class DateTimeParsing {
 	private static void print(String text) {
 		String readable = Util.formatAirTime(text);
 
-		System.out.printf("%s -> %s\n", text, readable);
+		System.out.printf("%s -> %s%n", text, readable);
 	}
 
 }

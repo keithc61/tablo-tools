@@ -655,7 +655,7 @@ public abstract class MediaHandler {
 			if (isSelected(recording)) {
 				if (booleanOption(recording, "list")) {
 					return () -> {
-						System.out.printf("Video: %s\n", airing);
+						System.out.printf("Video: %s%n", airing);
 						printMeta(System.out);
 					};
 				}
