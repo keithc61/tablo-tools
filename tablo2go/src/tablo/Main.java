@@ -261,13 +261,9 @@ public final class Main {
 
 				Runnable action = handler.getAction(ip, airing, recordings);
 
-				if (action == null) {
-					continue;
+				if (action != null) {
+					pendingActions.put(airing, action);
 				}
-
-				String videoId = airing.substring(airing.lastIndexOf('/') + 1);
-
-				pendingActions.put(videoId, action);
 			}
 
 			actions.addAll(pendingActions.values());
