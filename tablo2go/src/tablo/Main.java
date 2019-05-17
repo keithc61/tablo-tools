@@ -9,13 +9,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -109,10 +107,6 @@ public final class Main {
 		String playlistUrl = Util.selectUnique(watchData, "playlist_url");
 
 		return playlistUrl != null ? new URL(playlistUrl) : null;
-	}
-
-	private static Comparator<String> idComparator() {
-		return Comparator.comparing(String::length).thenComparing(Comparator.naturalOrder());
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -225,8 +219,6 @@ public final class Main {
 
 			cache.retainRecordings(ip, airings);
 
-			Map<String, Runnable> pendingActions = new TreeMap<>(idComparator());
-
 			for (String airing : airings) {
 				Map<String, String> attributes = cache.getAttributes(ip, airing);
 				MediaHandler handler = MediaHandler.newInstance(airing, attributes);
@@ -262,18 +254,16 @@ public final class Main {
 				Runnable action = handler.getAction(ip, airing, recordings);
 
 				if (action != null) {
-					pendingActions.put(airing, action);
+					actions.add(action);
 				}
 			}
-
-			actions.addAll(pendingActions.values());
 		}
 
 		if (cacheFile != null && (cacheFile.canWrite() || !cacheFile.exists())) {
 			cache.save(cacheFile);
 		}
 
-		actions.stream().forEach(Runnable::run);
+		actions.stream().sorted().forEach(Runnable::run);
 	}
 
 }

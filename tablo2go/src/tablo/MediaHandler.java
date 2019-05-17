@@ -209,6 +209,43 @@ public abstract class MediaHandler {
 
 	}
 
+	private static final class OrderedAction implements Comparable<OrderedAction>, Runnable {
+
+		private final Runnable action;
+
+		private final String airing;
+
+		private final int index;
+
+		OrderedAction(int index, String airing, Runnable action) {
+			super();
+			this.action = action;
+			this.airing = airing;
+			this.index = index;
+		}
+
+		@Override
+		public int compareTo(OrderedAction that) {
+			int result = Integer.compare(this.index, that.index);
+
+			if (result == 0) {
+				result = Integer.compare(this.airing.length(), that.airing.length());
+			}
+
+			if (result == 0) {
+				result = this.airing.compareTo(that.airing);
+			}
+
+			return result;
+		}
+
+		@Override
+		public void run() {
+			action.run();
+		}
+
+	}
+
 	private static final class Sports extends MediaHandler {
 
 		Sports(Map<String, String> attributes) {
@@ -651,23 +688,29 @@ public abstract class MediaHandler {
 	 * @throws IOException
 	 */
 	public final Runnable getAction(String ip, String airing, List<Recording> recordings) throws IOException {
-		for (Recording recording : recordings) {
+		for (int index = 0, count = recordings.size(); index < count; ++index) {
+			Recording recording = recordings.get(index);
+
 			if (isSelected(recording)) {
+				Runnable action = null;
+
 				if (booleanOption(recording, "list")) {
-					return () -> {
+					action = () -> {
 						System.out.printf("Video: %s%n", airing);
 						printMeta(System.out);
 					};
-				}
-
-				if (isFinished() || booleanOption(recording, "includeUnfinished")) {
+				} else if (isFinished() || booleanOption(recording, "includeUnfinished")) {
 					URL playlist = Main.getPlaylistURL(ip, airing);
 
 					if (playlist != null) {
-						return () -> save(recording, playlist);
+						action = () -> save(recording, playlist);
+					} else {
+						System.err.println("Failed to get playlist URL for " + airing);
 					}
+				}
 
-					System.err.println("Failed to get playlist URL for " + airing);
+				if (action != null) {
+					return new OrderedAction(index, airing, action);
 				}
 
 				break;
