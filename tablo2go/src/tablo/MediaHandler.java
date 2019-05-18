@@ -691,7 +691,7 @@ public abstract class MediaHandler {
 		for (int index = 0, count = recordings.size(); index < count; ++index) {
 			Recording recording = recordings.get(index);
 
-			if (isSelected(recording)) {
+			if (isSelected(recording) && !skipExisting(recording)) {
 				Runnable action = null;
 
 				if (booleanOption(recording, "list")) {
@@ -871,6 +871,18 @@ public abstract class MediaHandler {
 		} else {
 			attributes.put(key, value);
 		}
+	}
+
+	private boolean skipExisting(Recording recording) {
+		if ("ignore".equalsIgnoreCase(recording.getOption("existing"))) {
+			File target = getTargetFile(recording);
+
+			if (target != null) {
+				return target.exists();
+			}
+		}
+
+		return false;
 	}
 
 	protected final void trimAndSet(String key, String value) {
