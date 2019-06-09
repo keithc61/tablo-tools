@@ -604,13 +604,13 @@ public abstract class MediaHandler {
 		command.add("aac_adtstoasc");
 
 		if ((option = recording.getOption("crf")) != null) {
-			command.add("-c:a");
+			command.add("-codec:a");
 			command.add("copy");
 
 			command.add("-crf");
 			command.add(option);
 		} else if ((option = recording.getOption("videoRate")) != null) {
-			command.add("-c:a");
+			command.add("-codec:a");
 			command.add("copy");
 
 			command.add("-b:v");

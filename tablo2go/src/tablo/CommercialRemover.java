@@ -10,7 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A utility to trim segments (e.g. commercials) from an MP4 video with ffmpeg.
+ * A utility to trim segments (e.g. commercials) from a video with ffmpeg.
  *
  * @author keithc
  */
@@ -38,9 +38,9 @@ public final class CommercialRemover {
 	private static String ffmpeg = "ffmpeg";
 
 	/**
-	 * A pattern to detect and decompose mp4 filenames.
+	 * A pattern to detect and decompose video filenames.
 	 */
-	private static final Pattern MP4 = Pattern.compile("(.*)(\\.mp4)", Pattern.CASE_INSENSITIVE);
+	private static final Pattern VIDEO = Pattern.compile("(.*)(\\.avi|\\.mkv|\\.mp4)", Pattern.CASE_INSENSITIVE);
 
 	/**
 	 * Append a 'pad' to the given buffer. In a complex filter, pads name the
@@ -155,16 +155,16 @@ public final class CommercialRemover {
 	 * @throws IOException
 	 */
 	private static void process(String fileName) throws IOException {
-		Matcher matcher = MP4.matcher(fileName);
+		Matcher matcher = VIDEO.matcher(fileName);
 
 		if (!matcher.matches()) {
 			printError("Unsupported file type", fileName);
 			return;
 		}
 
-		File mp4File = new File(fileName);
+		File videoFile = new File(fileName);
 
-		if (!mp4File.exists()) {
+		if (!videoFile.exists()) {
 			printError("File not found", fileName);
 			return;
 		}
@@ -177,7 +177,7 @@ public final class CommercialRemover {
 			return;
 		}
 
-		File outFile = new File(baseName + "-nc" + matcher.group(2));
+		File outFile = new File(baseName + "-nc.mp4");
 
 		if (outFile.exists()) {
 			printError("Output already exists", outFile.getAbsolutePath());
@@ -219,7 +219,7 @@ public final class CommercialRemover {
 		command.add(crf);
 
 		command.add("-codec:a");
-		command.add("libvo_aacenc");
+		command.add("aac");
 
 		command.add("-b:a");
 		command.add("160k");
