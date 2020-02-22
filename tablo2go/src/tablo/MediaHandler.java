@@ -16,6 +16,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.IntFunction;
+import java.util.regex.Pattern;
 
 import tablo.util.StringTemplate;
 
@@ -458,6 +460,8 @@ public abstract class MediaHandler {
 
 	}
 
+	private static final Pattern CharmapPattern = Pattern.compile("|", Pattern.LITERAL);
+
 	protected static final DateFormat FileTimeFormat = new SimpleDateFormat("yyyy-MM-dd HHmm");
 
 	private static final char[] HEX = "0123456789ABCDEF".toCharArray();
@@ -466,7 +470,7 @@ public abstract class MediaHandler {
 		return Boolean.parseBoolean(recording.getOption(name));
 	}
 
-	protected static final String fixPathSegment(String segment) {
+	protected static final String fixPathSegment(String segment, IntFunction<String> charmap) {
 		if (segment == null) {
 			return null;
 		}
@@ -474,30 +478,56 @@ public abstract class MediaHandler {
 		StringBuilder buffer = new StringBuilder();
 
 		for (char ch : segment.toCharArray()) {
-			switch (ch) {
-			case '\0':
-			case '<':
-			case '>':
-			case ':':
-			case '"':
-			case '/':
-			case '\\':
-			case '|':
-			case '?':
-			case '*':
-			case '%': // a legal character, but used as an escape here
-				buffer.append('%');
-				buffer.append(HEX[(ch >> 4) & 0xF]);
-				buffer.append(HEX[(ch >> 0) & 0xF]);
-				break;
+			String replacement = charmap.apply(ch);
 
-			default:
-				buffer.append(ch);
-				break;
+			if (replacement != null) {
+				buffer.append(replacement);
+			} else {
+				switch (ch) {
+				case '\0':
+				case '<':
+				case '>':
+				case ':':
+				case '"':
+				case '/':
+				case '\\':
+				case '|':
+				case '?':
+				case '*':
+				case '%': // a legal character, but used as an escape here
+					buffer.append('%');
+					buffer.append(HEX[(ch >> 4) & 0xF]);
+					buffer.append(HEX[(ch >> 0) & 0xF]);
+					break;
+
+				default:
+					buffer.append(ch);
+					break;
+				}
 			}
 		}
 
 		return buffer.toString();
+	}
+
+	private static final IntFunction<String> getCharmap(Recording recording) {
+		String option = recording.getOption("charmap");
+
+		if (option == null || option.isEmpty()) {
+			return ch -> null;
+		}
+
+		Map<Character, String> table = new HashMap<>();
+
+		for (String map : CharmapPattern.split(option)) {
+			if (map.length() >= 2 && map.charAt(1) == '=') {
+				table.put(Character.valueOf(map.charAt(0)), map.substring(2));
+			} else {
+				throw new IllegalArgumentException("Bad character mapping: " + map);
+			}
+		}
+
+		return ch -> table.get(Character.valueOf((char) ch));
 	}
 
 	protected static final boolean isSelectedIn(String value, RangeList list) {
@@ -743,7 +773,8 @@ public abstract class MediaHandler {
 			return null;
 		}
 
-		String path = StringTemplate.expand(output, key -> fixPathSegment(values.get(key)));
+		IntFunction<String> charmap = getCharmap(recording);
+		String path = StringTemplate.expand(output, key -> fixPathSegment(values.get(key), charmap));
 
 		return new File(path);
 	}
