@@ -2,6 +2,7 @@ package tablo;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -103,10 +104,12 @@ public final class Main {
 
 		connection.setRequestMethod("POST");
 
-		Map<?, ?> watchData = (Map<?, ?>) Util.readJSON(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-		String playlistUrl = Util.selectUnique(watchData, "playlist_url");
+		try (InputStream stream = connection.getInputStream()) {
+			Map<?, ?> watchData = (Map<?, ?>) Util.readJSON(new InputStreamReader(stream, StandardCharsets.UTF_8));
+			String playlistUrl = Util.selectUnique(watchData, "playlist_url");
 
-		return playlistUrl != null ? new URL(playlistUrl) : null;
+			return playlistUrl != null ? new URL(playlistUrl) : null;
+		}
 	}
 
 	public static void main(String[] args) throws Exception {
