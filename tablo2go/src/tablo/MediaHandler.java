@@ -649,7 +649,7 @@ public abstract class MediaHandler {
 
 		metadata.forEach((key, value) -> {
 			command.add("-metadata");
-			command.add(key + "=" + value.replaceAll("'", "\\'"));
+			command.add(key + "=" + value.replaceAll("'", "%27"));
 		});
 
 		command.add("-f");
