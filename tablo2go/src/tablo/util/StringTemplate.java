@@ -17,7 +17,7 @@ public class StringTemplate {
 	 * @param valueProvider the mapping from references to values
 	 * @return the expanded template
 	 * @throws IllegalArgumentException if the template makes references unknown to valueProvider
-	 * or if the
+	 * or if the padding expression is excessive
 	 */
 	public static String expand(String template, Function<String, String> valueProvider) {
 		Matcher matcher = ReferencePattern.matcher(template);
