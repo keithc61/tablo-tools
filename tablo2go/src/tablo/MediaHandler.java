@@ -154,9 +154,7 @@ public abstract class MediaHandler {
 
 			int year = getYear();
 
-			if (year != 0) {
-				values.put("year", " (" + year + ')');
-			}
+			values.put("year", year == 0 ? "" : " (" + year + ')');
 
 			return values;
 		}
